@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json.schemastore.org/package",
+  "name": "template5",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "import-data": "node scripts/importData.js"
+  },
+  "dependencies": {
+    "@radix-ui/react-slot": "^1.1.1",
+    "@sanity/client": "^6.27.2",
+    "@sanity/image-url": "^1.1.0",
+    "@sanity/vision": "^3.70.0",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "dotenv": "^16.4.7",
+    "framer-motion": "^12.0.6",
+    "lucide-react": "^0.474.0",
+    "next": "^15.1.5",
+    "next-sanity": "^9.8.38",
+    "react": "^19.0.0",
+    "react-dom": "^19",
+    "react-icons": "^5.4.0",
+    "sanity": "^3.70.0",
+    "styled-components": "^6.1.14",
+    "tailwind-merge": "^2.6.0",
+    "tailwindcss-animate": "^1.0.7"
+  },
+  "devDependencies": {
+    "@types/node": "^22",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9.18.0",
+    "eslint-config-next": "15.1.5",
+    "postcss": "^8",
+    "tailwindcss": "^3.4.17",
+    "typescript": "^5"
+  }
+}
