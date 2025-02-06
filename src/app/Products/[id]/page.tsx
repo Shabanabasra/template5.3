@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+// import { useEffect, useState } from "react";
 
 const ProductDetail = () => {
   const searchParams = useSearchParams();
@@ -96,4 +97,5 @@ const ProductDetail = () => {
 };
 
 export default ProductDetail;
+
 

@@ -12,6 +12,8 @@
     "import-data": "node scripts/importData.js"
   },
   "dependencies": {
+    "@clerk/clerk-react": "^5.22.10",
+    "@clerk/nextjs": "^6.10.6",
     "@radix-ui/react-slot": "^1.1.1",
     "@sanity/client": "^6.27.2",
     "@sanity/image-url": "^1.1.0",
@@ -21,13 +23,14 @@
     "dotenv": "^16.4.7",
     "framer-motion": "^12.0.6",
     "lucide-react": "^0.474.0",
-    "next": "^15.1.5",
+    "next": "^15.1.6",
     "next-sanity": "^9.8.38",
     "react": "^19.0.0",
     "react-dom": "^19",
     "react-icons": "^5.4.0",
     "sanity": "^3.70.0",
     "styled-components": "^6.1.14",
+    "swr": "^2.3.0",
     "tailwind-merge": "^2.6.0",
     "tailwindcss-animate": "^1.0.7"
   },

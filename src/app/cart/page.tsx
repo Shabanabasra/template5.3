@@ -1,9 +1,10 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { client } from "@/sanity/lib/client";
 
 interface CartItem {
-  id: number;
+  id: string; // ✅ Fix: id ko string banaya
   name: string;
   price: number;
   quantity: number;
@@ -12,7 +13,8 @@ interface CartItem {
 
 const CartPage = () => {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
-  const [orderStep, setOrderStep] = useState(0);
+  const [orderPlaced, setOrderPlaced] = useState(false);
+
   const [billingInfo, setBillingInfo] = useState({
     firstName: "",
     lastName: "",
@@ -23,12 +25,39 @@ const CartPage = () => {
     email: "",
   });
 
+  // ✅ **Latest Orders Fetch Karna**
+  const fetchLatestOrders = async () => {
+    try {
+      const orders = await client.fetch(`
+        *[_type == "order"] | order(_createdAt desc) {
+          _id,
+          customerName,
+          email,
+          address,
+          phone,
+          totalAmount,
+          items[] {
+            name,
+            price,
+            quantity,
+            imageUrl
+          }
+        }
+      `);
+      console.log("Latest Orders:", orders);
+    } catch (error) {
+      console.error("Error fetching latest orders:", error);
+    }
+  };
+
   useEffect(() => {
+    // ✅ Local Storage se cart data load karein
     const storedCart = localStorage.getItem("cartItems");
     if (storedCart) {
       setCartItems(JSON.parse(storedCart));
     }
-  }, []);
+    fetchLatestOrders(); // ✅ Orders ko real-time update karein
+  }, [orderPlaced]);
 
   const calculateTotal = () => {
     return Number(
@@ -41,47 +70,54 @@ const CartPage = () => {
     setBillingInfo((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleCheckout = () => {
-    setOrderStep(1);
-  };
+  // ✅ **Order Checkout & Latest Orders Fetch**
+  const handleCheckout = async () => {
+    if (cartItems.length === 0) return alert("Cart is empty!");
 
-  const confirmOrder = () => {
-    setOrderStep(2);
-    setCartItems([]);
-    localStorage.removeItem("cartItems");
+    try {
+      const orderData = {
+        _type: "order",
+        customerName: `${billingInfo.firstName} ${billingInfo.lastName}`,
+        email: billingInfo.email,
+        address: `${billingInfo.address}, ${billingInfo.city}, ${billingInfo.zipCode}`,
+        phone: billingInfo.phone,
+        totalAmount: calculateTotal(),
+        items: cartItems.map((item) => ({
+          _type: "orderItem",
+          name: item.name,
+          price: item.price,
+          quantity: item.quantity,
+          imageUrl: item.imageUrl,
+        })),
+        status: "pending",
+      };
+
+      await client.create(orderData); // ✅ Order Sanity me save karein
+      setOrderPlaced(true); // ✅ Order update karne ka signal
+      setCartItems([]);
+      localStorage.removeItem("cartItems");
+
+      fetchLatestOrders(); // ✅ Checkout ke baad naye orders ko load karein
+    } catch (error) {
+      console.error("Error placing order:", error);
+    }
   };
 
   return (
     <div className="container mx-auto p-8 min-h-screen flex flex-col justify-center">
       <h1 className="text-3xl font-bold mb-6 text-center">Your Shopping Cart</h1>
 
-      {orderStep === 2 ? (
-        <div className="bg-green-100 text-green-800 p-6 rounded text-center max-w-xl mx-auto">
-          <h2 className="text-2xl font-semibold">✅ Success!</h2>
-          <p>Your order has been successfully processed.</p>
-          <button className="mt-4 bg-blue-500 text-white py-3 px-6 rounded hover:bg-blue-700 transition" onClick={() => setOrderStep(0)}>
-            OK
-          </button>
-        </div>
-      ) : orderStep === 1 ? (
-        <div className="bg-yellow-100 text-yellow-800 p-6 rounded text-center max-w-xl mx-auto">
-          <h2 className="text-2xl font-semibold">⏳ Processing your order...</h2>
-          <p>Please wait a moment.</p>
-          <div className="mt-4">
-            <button className="bg-green-500 text-white py-3 px-6 rounded hover:bg-green-700 transition mx-4" onClick={confirmOrder}>
-              ✅ Proceed
-            </button>
-            <button className="bg-red-500 text-white py-3 px-6 rounded hover:bg-red-700 transition mx-4" onClick={() => setOrderStep(0)}>
-              ❌ Cancel
-            </button>
-          </div>
+      {orderPlaced ? (
+        <div className="text-center bg-green-100 p-6 rounded">
+          <h2 className="text-2xl font-semibold">✅ Order Placed Successfully!</h2>
+          <p>Your order has been saved in Sanity Studio.</p>
         </div>
       ) : cartItems.length === 0 ? (
         <p className="text-center text-lg">Your cart is empty.</p>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-6xl mx-auto">
-          {/* Cart Items Section */}
-          <div className="bg-white p-8 shadow-lg rounded w-full">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          {/* Cart Items */}
+          <div className="bg-white p-8 shadow-lg rounded">
             <h2 className="text-2xl font-semibold mb-6">Cart Items</h2>
             {cartItems.map((item) => (
               <div key={item.id} className="flex justify-between items-center mb-6 p-4 border-b">
@@ -98,36 +134,28 @@ const CartPage = () => {
             <div className="mt-6 text-lg font-semibold">Total: ${calculateTotal()}</div>
           </div>
 
-          {/* Billing Information Section */}
-          <div className="bg-gray-100 p-8 shadow-lg rounded w-full">
+          {/* Billing Form */}
+          <div className="bg-gray-100 p-8 shadow-lg rounded">
             <h2 className="text-2xl font-semibold mb-6">Billing Information</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <input type="text" name="firstName" placeholder="First Name" value={billingInfo.firstName} onChange={handleInputChange} className="border p-3 rounded w-full" />
-              <input type="text" name="lastName" placeholder="Last Name" value={billingInfo.lastName} onChange={handleInputChange} className="border p-3 rounded w-full" />
-              <input type="text" name="address" placeholder="Address" value={billingInfo.address} onChange={handleInputChange} className="border p-3 rounded w-full" />
-              <input type="text" name="city" placeholder="City" value={billingInfo.city} onChange={handleInputChange} className="border p-3 rounded w-full" />
-              <input type="text" name="zipCode" placeholder="Zip Code" value={billingInfo.zipCode} onChange={handleInputChange} className="border p-3 rounded w-full" />
-              <input type="text" name="phone" placeholder="Phone" value={billingInfo.phone} onChange={handleInputChange} className="border p-3 rounded w-full" />
-              <input type="email" name="email" placeholder="Email" value={billingInfo.email} onChange={handleInputChange} className="border p-3 rounded w-full" />
+              {["firstName", "lastName", "address", "city", "zipCode", "phone", "email"].map((field) => (
+                <input
+                  key={field}
+                  type="text"
+                  name={field}
+                  placeholder={field.replace(/([A-Z])/g, " $1")}
+                  value={billingInfo[field as keyof typeof billingInfo]}
+                  onChange={handleInputChange}
+                  className="border p-3 rounded w-full"
+                />
+              ))}
             </div>
-            {/* Checkout Button */}
-            <div className="mt-8">
-              <button
-                className="bg-blue-500 text-white py-3 px-6 rounded hover:bg-blue-700 transition w-full text-lg"
-                onClick={handleCheckout}
-                disabled={
-                  !billingInfo.firstName ||
-                  !billingInfo.lastName ||
-                  !billingInfo.address ||
-                  !billingInfo.city ||
-                  !billingInfo.zipCode ||
-                  !billingInfo.phone ||
-                  !billingInfo.email
-                }
-              >
-                Proceed to Checkout
-              </button>
-            </div>
+            <button
+              className="mt-6 bg-blue-500 text-white py-3 px-6 rounded hover:bg-blue-700 transition w-full text-lg"
+              onClick={handleCheckout}
+            >
+              Proceed to Checkout
+            </button>
           </div>
         </div>
       )}
@@ -136,10 +164,3 @@ const CartPage = () => {
 };
 
 export default CartPage;
-
-
-
-
-
-
-
